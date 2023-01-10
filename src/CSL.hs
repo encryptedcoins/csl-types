@@ -27,13 +27,22 @@ data TransactionInput = TransactionInput {
 
 type TransactionInputs = [TransactionInput]
 
-type MultiAsset = Map.Map BuiltinByteString (Map.Map BuiltinByteString Text)
+newtype MultiAsset = MultiAsset (Map.Map Text (Map.Map Text Text))
+    deriving stock (Eq, Ord, Show, Generic)
+    deriving (ToJSON, FromJSON)
+
+data Value = Value
+    {
+        coin        :: Text,
+        multiasset  :: MultiAsset
+    }
+    deriving stock (Eq, Ord, Show, Generic)
+    deriving (ToJSON, FromJSON)
 
 data TransactionOutput = TransactionOutput
     {
         address     :: BuiltinByteString,
-        amount      :: Text,
-        multiasset  :: MultiAsset,
+        amount      :: Value,
         plutus_data :: Maybe BuiltinByteString,
         script_ref  :: Maybe BuiltinByteString
     }

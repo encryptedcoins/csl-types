@@ -58,4 +58,15 @@ library
       text                                   -any
     hs-source-dirs: src
     
-    
+test-suite csl-types-test
+  Type:                 exitcode-stdio-1.0
+  Default-Language:     Haskell2010
+  Hs-Source-Dirs:       test
+  Main-Is:              Main.hs
+  Build-Depends:
+    base                          >= 4.9 && < 5,
+    aeson                                  -any,
+    bytestring                             -any,
+    containers                             -any,
+    csl-types                              -any,
+    text                                   -any

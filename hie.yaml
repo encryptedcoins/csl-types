@@ -2,3 +2,5 @@ cradle:
   cabal:
     - path: "src"
       component: "csl-types:lib:csl-types"
+    - path: "test"
+      component: "csl-types:test:csl-types-test"
