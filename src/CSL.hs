@@ -27,14 +27,12 @@ data TransactionInput = TransactionInput {
 
 type TransactionInputs = [TransactionInput]
 
-newtype MultiAsset = MultiAsset (Map.Map Text (Map.Map Text Text))
-    deriving stock (Eq, Ord, Show, Generic)
-    deriving (ToJSON, FromJSON)
+type MultiAsset = Map.Map Text (Map.Map Text Text)
 
 data Value = Value
     {
         coin        :: Text,
-        multiasset  :: MultiAsset
+        multiasset  :: Maybe MultiAsset
     }
     deriving stock (Eq, Ord, Show, Generic)
     deriving (ToJSON, FromJSON)

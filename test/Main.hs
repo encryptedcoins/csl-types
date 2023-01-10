@@ -10,6 +10,7 @@
 
 module Main where
 
+import           Data.Aeson       (encode)
 import qualified Data.Map         as Map
 import           Data.Text        (Text)
 import           Prelude
