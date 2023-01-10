@@ -39,7 +39,7 @@ data Value = Value
 
 data TransactionOutput = TransactionOutput
     {
-        address     :: BuiltinByteString,
+        address     :: Text,
         amount      :: Value,
         plutus_data :: Maybe BuiltinByteString,
         script_ref  :: Maybe BuiltinByteString
