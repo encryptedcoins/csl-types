@@ -32,10 +32,10 @@ type MultiAsset = Map.Map BuiltinByteString (Map.Map BuiltinByteString Text)
 data TransactionOutput = TransactionOutput
     {
         address     :: BuiltinByteString,
-        amount      :: Integer,
+        amount      :: Text,
         multiasset  :: MultiAsset,
-        plutus_data :: Maybe (),
-        script_ref  :: Maybe ()
+        plutus_data :: Maybe BuiltinByteString,
+        script_ref  :: Maybe BuiltinByteString
     }
     deriving stock (Eq, Ord, Show, Generic)
     deriving (ToJSON, FromJSON)
