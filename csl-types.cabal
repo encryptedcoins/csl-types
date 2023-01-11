@@ -6,6 +6,12 @@ version:            0.1.0.0
 author:             Vladimir Sinyakov
 maintainer:         team@encoins.io
 
+flag frontend
+    description:
+        Builds executables for the frontend.
+    default: False
+    manual:  True
+
 -- Plutus language settings
 common lang
     default-language:   Haskell2010
@@ -29,6 +35,9 @@ library
     import: lang
     exposed-modules:
       CSL
+    if !flag(frontend)
+      exposed-modules:
+        CSL.Class
     build-depends:
       base                          >= 4.9 && < 5,
       base16-bytestring                      -any,
@@ -51,11 +60,19 @@ library
       mtl                                    -any,
       openapi3                               -any,
       optparse-applicative                   -any,
-      plutus-tx-js                           -any,
       prettyprinter                          -any,
       QuickCheck                             -any,
       random                                 -any,
       text                                   -any
+    if flag(frontend)
+      build-depends:
+        plutus-tx-js                         -any,
+    else
+      build-depends:
+        plutus-apps-extra                    -any,
+        plutus-ledger                        -any,
+        plutus-ledger-api                    -any,
+        plutus-tx                            -any        
     hs-source-dirs: src
     
 test-suite csl-types-test

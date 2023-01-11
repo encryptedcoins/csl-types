@@ -15,11 +15,10 @@ import           Data.Aeson          (ToJSON, FromJSON)
 import qualified Data.Map            as Map
 import           Data.Text           (Text)
 import           GHC.Generics        (Generic)
-import           PlutusTx.Prelude    (BuiltinByteString)
 import           Prelude
 
 data TransactionInput = TransactionInput {
-        transaction_id :: BuiltinByteString,
+        transaction_id :: Text,
         index          :: Integer
     }
     deriving stock (Eq, Ord, Show, Generic)
@@ -27,7 +26,9 @@ data TransactionInput = TransactionInput {
 
 type TransactionInputs = [TransactionInput]
 
-type MultiAsset = Map.Map Text (Map.Map Text Text)
+newtype MultiAsset = MultiAsset (Map.Map Text (Map.Map Text Text))
+    deriving stock (Eq, Ord, Show, Generic)
+    deriving (ToJSON, FromJSON)
 
 data Value = Value
     {
@@ -41,8 +42,8 @@ data TransactionOutput = TransactionOutput
     {
         address     :: Text,
         amount      :: Value,
-        plutus_data :: Maybe BuiltinByteString,
-        script_ref  :: Maybe BuiltinByteString
+        plutus_data :: Maybe Text,
+        script_ref  :: Maybe Text
     }
     deriving stock (Eq, Ord, Show, Generic)
     deriving (ToJSON, FromJSON)
