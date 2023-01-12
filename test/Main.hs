@@ -16,6 +16,7 @@ import           Data.Text        (Text)
 import           Prelude
 
 import           CSL
+import           CSL.Class        (fromCSL)
 
 main :: IO ()
 main = do

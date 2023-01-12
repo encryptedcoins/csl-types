@@ -87,3 +87,12 @@ test-suite csl-types-test
     containers                             -any,
     csl-types                              -any,
     text                                   -any
+  if flag(frontend)
+    build-depends:
+      plutus-tx-js                         -any,
+  else
+    build-depends:
+      plutus-apps-extra                    -any,
+      plutus-ledger                        -any,
+      plutus-ledger-api                    -any,
+      plutus-tx                            -any      

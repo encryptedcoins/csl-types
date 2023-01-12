@@ -36,10 +36,11 @@ instance FromCSL CSL.TransactionInputs [TxOutRef] where
 
 instance FromCSL CSL.Value Value where
     fromCSL (CSL.Value lovelace mma) = do
-        adaVal <- fmap lovelaceValueOf $ readMaybe $ unpack lovelace
-        CSL.MultiAsset ma <- mma
-        let val = adaVal + Value (g' ma)
-        return val
+        valADA <- fmap lovelaceValueOf $ readMaybe $ unpack lovelace
+        let valMA = case mma of
+                Nothing -> zero
+                Just (CSL.MultiAsset ma) -> Value (g' ma)
+        return $ valADA + valMA
         where
             f  (aTxt, bTxt) = do
                 a <- TokenName . toBuiltin <$> decodeHex aTxt
