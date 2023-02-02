@@ -24,7 +24,7 @@ packages: ./.
 source-repository-package
   type: git
   location: https://github.com/encryptedcoins/plutus-tx-js.git
-  tag: 72ba8fb13b2295b52b7c98b90c0e5906190440e2
+  tag: f53ce6dcab669c2c6ae02d7d902e71b2ffe34271
 
 source-repository-package
   type: git
@@ -34,7 +34,7 @@ source-repository-package
 source-repository-package
   type: git
   location: https://github.com/encryptedcoins/plutus-apps-extra.git
-  tag: ab75d935df9da3872b9b3472ddaaf84f36334001
+  tag: 5879d8e5c44127418d1038fec57b1b8a98c4ec2d
 
 source-repository-package
   type: git
