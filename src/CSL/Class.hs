@@ -9,19 +9,19 @@
 
 module CSL.Class where
 
-import qualified Data.Map             as Map
-import           Data.Maybe           (Maybe)
-import           Data.Text            (unpack)
-import           Ledger               (TxOutRef(..), TxId(..), DecoratedTxOut (..), toPubKeyHash, stakingCredential)
-import           Ledger.Ada           (lovelaceValueOf)
-import           Ledger.Value         (Value(..), TokenName (..), CurrencySymbol (..))
-import           PlutusTx.AssocMap    hiding (mapMaybe)
-import           PlutusTx.Prelude     hiding (Maybe)
-import           Text.Hex             (decodeHex)
-import           Text.Read            (readMaybe)
+import qualified Data.Map                       as Map
+import           Data.Maybe                     (Maybe)
+import           Data.Text                      (unpack)
+import           Ledger                         (TxOutRef(..), TxId(..), DecoratedTxOut (..), toPubKeyHash, stakingCredential)
+import           Ledger.Ada                     (lovelaceValueOf)
+import           Ledger.Value                   (Value(..), TokenName (..), CurrencySymbol (..))
+import           PlutusTx.AssocMap              hiding (mapMaybe)
+import           PlutusTx.Prelude               hiding (Maybe)
+import           Text.Hex                       (decodeHex)
+import           Text.Read                      (readMaybe)
 
 import qualified CSL
-import           Utils.Address        (bech32ToAddress)
+import           PlutusAppsExtra.Utils.Address  (bech32ToAddress)
 
 class FromCSL a b where
     fromCSL :: a -> Maybe b
