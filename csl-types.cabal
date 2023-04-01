@@ -44,6 +44,7 @@ library
       base64                                 -any,
       aeson                                  -any,
       bytestring                             -any,
+      cardano-api                            -any,
       containers                             -any,
       data-default                           -any,
       deepseq                                -any,
