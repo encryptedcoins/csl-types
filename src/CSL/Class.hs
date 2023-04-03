@@ -1,11 +1,11 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DerivingStrategies    #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NoImplicitPrelude     #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE DerivingStrategies     #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE NoImplicitPrelude      #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TypeFamilies           #-}
 
 module CSL.Class where
 
@@ -27,7 +27,7 @@ import           Text.Read                     (readMaybe)
 
 import qualified CSL
 
-class FromCSL a b where
+class FromCSL a b | a -> b where
     fromCSL :: a -> Maybe b
 
 instance FromCSL CSL.TransactionInput TxOutRef where
@@ -77,7 +77,7 @@ instance FromCSL CSL.TransactionUnspentOutput (TxOutRef, DecoratedTxOut) where
 instance FromCSL CSL.TransactionUnspentOutputs [(TxOutRef, DecoratedTxOut)] where
     fromCSL = Just . mapMaybe fromCSL
 
-class ToCSL a b where
+class ToCSL a b | a -> b where
     toCSL :: a -> Maybe b
 
 instance ToCSL TxOutRef CSL.TransactionInput where
@@ -92,7 +92,7 @@ instance ToCSL Value CSL.Value where
         where
             lovelace = fromValue val
             assets   = noAdaValue val
-            mma = if assets == zero then Nothing else Just $ g' $ getValue val
+            mma = if assets == zero then Nothing else Just $ g' $ getValue assets
             g' = Map.fromList . map f' . toList
             f' (k, m) = let kTxt = encodeHex $ fromBuiltin $ unCurrencySymbol k
                         in (kTxt, g m)

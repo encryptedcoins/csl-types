@@ -85,9 +85,13 @@ test-suite csl-types-test
     base                          >= 4.9 && < 5,
     aeson                                  -any,
     bytestring                             -any,
+    cardano-api                            -any,
     containers                             -any,
     csl-types                              -any,
-    text                                   -any
+    hspec                                  -any,
+    plutus-pab                             -any,
+    text                                   -any,
+    QuickCheck                             -any
   if flag(frontend)
     build-depends:
       plutus-tx-js                         -any,
