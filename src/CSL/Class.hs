@@ -9,25 +9,26 @@
 
 module CSL.Class where
 
-import           Cardano.Api.Shelley           (NetworkId)
-import qualified Data.Map                      as Map
-import           Data.Maybe                    (Maybe)
-import           Data.Text                     (pack, unpack)
-import           Ledger                        (Address (Address), DecoratedTxOut (..), TxId (..), TxOutRef (..), noAdaValue,
-                                                stakingCredential, toPubKeyHash)
-import           Ledger.Ada                    (Ada (getLovelace), fromValue, lovelaceValueOf)
-import           Ledger.Value                  (CurrencySymbol (..), TokenName (..), Value (..))
-import           Plutus.V1.Ledger.Api          (Credential (PubKeyCredential))
-import           PlutusAppsExtra.Utils.Address (addressToBech32, bech32ToAddress)
-import           PlutusTx.AssocMap             hiding (mapMaybe)
-import           PlutusTx.Prelude              hiding (Maybe, toList)
-import           Prelude                       (repeat, show)
-import           Text.Hex                      (decodeHex, encodeHex)
-import           Text.Read                     (readMaybe)
+import           Cardano.Api.Shelley              (NetworkId)
+import qualified Data.Map                         as Map
+import           Data.Maybe                       (Maybe)
+import           Data.Text                        (pack, unpack)
+import           Ledger                           (Address (Address), DecoratedTxOut (..), TxId (..), TxOutRef (..), noAdaValue,
+                                                   stakingCredential, toPubKeyHash)
+import           Ledger.Ada                       (Ada (getLovelace), fromValue, lovelaceValueOf)
+import           Ledger.Value                     (CurrencySymbol (..), TokenName (..), Value (..))
+import           Plutus.V1.Ledger.Api             (Credential (PubKeyCredential))
+import           PlutusAppsExtra.Utils.Address    (addressToBech32, bech32ToAddress)
+import           PlutusAppsExtra.Utils.ChainIndex (MapUTXO)
+import           PlutusTx.AssocMap                hiding (mapMaybe)
+import           PlutusTx.Prelude                 hiding (Maybe, toList)
+import           Prelude                          (repeat, show)
+import           Text.Hex                         (decodeHex, encodeHex)
+import           Text.Read                        (readMaybe)
 
 import qualified CSL
 
-class FromCSL a b | a -> b where
+class FromCSL a b | b -> a where
     fromCSL :: a -> Maybe b
 
 instance FromCSL CSL.TransactionInput TxOutRef where
@@ -77,6 +78,9 @@ instance FromCSL CSL.TransactionUnspentOutput (TxOutRef, DecoratedTxOut) where
 instance FromCSL CSL.TransactionUnspentOutputs [(TxOutRef, DecoratedTxOut)] where
     fromCSL = Just . mapMaybe fromCSL
 
+instance FromCSL CSL.TransactionUnspentOutputs MapUTXO where
+    fromCSL = fmap Map.fromList . fromCSL
+
 class ToCSL a b | a -> b where
     toCSL :: a -> Maybe b
 
@@ -117,3 +121,6 @@ instance ToCSL (TxOutRef, DecoratedTxOut, NetworkId) CSL.TransactionUnspentOutpu
 
 instance ToCSL ([(TxOutRef, DecoratedTxOut)], NetworkId) CSL.TransactionUnspentOutputs where
     toCSL (xs, network) = Just $ mapMaybe (\(ref, txOut) -> toCSL (ref, txOut, network)) xs
+
+instance ToCSL (MapUTXO, NetworkId) CSL.TransactionUnspentOutputs where
+    toCSL (mapUtxo, network) = toCSL (Map.toList mapUtxo, network)
