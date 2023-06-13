@@ -1,29 +1,33 @@
-{-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE DerivingStrategies         #-}
-{-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE NoImplicitPrelude          #-}
-{-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE DerivingStrategies     #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE NoImplicitPrelude      #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TypeFamilies           #-}
 
 module CSL.Class where
 
-import qualified Data.Map                       as Map
-import           Data.Maybe                     (Maybe)
-import           Data.Text                      (unpack)
-import           Ledger                         (TxOutRef(..), TxId(..), DecoratedTxOut (..), toPubKeyHash, stakingCredential)
-import           Ledger.Ada                     (lovelaceValueOf)
-import           Ledger.Value                   (Value(..), TokenName (..), CurrencySymbol (..))
-import           PlutusTx.AssocMap              hiding (mapMaybe)
-import           PlutusTx.Prelude               hiding (Maybe)
-import           Text.Hex                       (decodeHex)
-import           Text.Read                      (readMaybe)
+import           Cardano.Api.Shelley              (NetworkId)
+import qualified Data.Map                         as Map
+import           Data.Maybe                       (Maybe)
+import           Data.Text                        (pack, unpack)
+import           Ledger                           (DecoratedTxOut (..), TxId (..), TxOutRef (..), noAdaValue,
+                                                   stakingCredential, toPubKeyHash, _decoratedTxOutAddress)
+import           Ledger.Ada                       (Ada (getLovelace), fromValue, lovelaceValueOf)
+import           Ledger.Value                     (CurrencySymbol (..), TokenName (..), Value (..))
+import           PlutusAppsExtra.Utils.Address    (addressToBech32, bech32ToAddress)
+import           PlutusAppsExtra.Utils.ChainIndex (MapUTXO)
+import           PlutusTx.AssocMap                hiding (mapMaybe)
+import           PlutusTx.Prelude                 hiding (Maybe, toList)
+import           Prelude                          (repeat, show)
+import           Text.Hex                         (decodeHex, encodeHex)
+import           Text.Read                        (readMaybe)
 
 import qualified CSL
-import           PlutusAppsExtra.Utils.Address  (bech32ToAddress)
 
-class FromCSL a b where
+class FromCSL a b | b -> a where
     fromCSL :: a -> Maybe b
 
 instance FromCSL CSL.TransactionInput TxOutRef where
@@ -69,6 +73,51 @@ instance FromCSL CSL.TransactionUnspentOutput (TxOutRef, DecoratedTxOut) where
         ref   <- fromCSL input
         txOut <- fromCSL output
         return (ref, txOut)
-    
+
 instance FromCSL CSL.TransactionUnspentOutputs [(TxOutRef, DecoratedTxOut)] where
     fromCSL = Just . mapMaybe fromCSL
+
+instance FromCSL CSL.TransactionUnspentOutputs MapUTXO where
+    fromCSL = fmap Map.fromList . fromCSL
+
+class ToCSL a b | a -> b where
+    toCSL :: a -> Maybe b
+
+instance ToCSL TxOutRef CSL.TransactionInput where
+    toCSL (TxOutRef (TxId bbs) ind) =
+        Just $ CSL.TransactionInput (encodeHex $ fromBuiltin bbs) ind
+
+instance ToCSL [TxOutRef] CSL.TransactionInputs where
+    toCSL = Just . mapMaybe toCSL
+
+instance ToCSL Value CSL.Value where
+    toCSL val = Just $ CSL.Value (pack $ show $ getLovelace lovelace) (CSL.MultiAsset <$> mma)
+        where
+            lovelace = fromValue val
+            assets   = noAdaValue val
+            mma = if assets == zero then Nothing else Just $ g' $ getValue assets
+            g' = Map.fromList . map f' . toList
+            f' (k, m) = let kTxt = encodeHex $ fromBuiltin $ unCurrencySymbol k
+                        in (kTxt, g m)
+            g = Map.fromList . map f . toList
+            f (a, b) = let aTxt = encodeHex $ fromBuiltin $ unTokenName a
+                           bTxt = pack $ show b
+                       in (aTxt, bTxt)
+
+instance ToCSL (DecoratedTxOut, NetworkId) CSL.TransactionOutput where
+    toCSL (txOut, networkId) = do
+        addrCSL <- addressToBech32 networkId $ _decoratedTxOutAddress txOut
+        valCSL  <- toCSL $ _decoratedTxOutValue txOut
+        return $ CSL.TransactionOutput addrCSL valCSL Nothing Nothing
+
+instance ToCSL ([DecoratedTxOut], NetworkId) CSL.TransactionOutputs where
+    toCSL (txOuts, network) = Just . mapMaybe toCSL $ zip txOuts $ repeat network
+
+instance ToCSL (TxOutRef, DecoratedTxOut, NetworkId) CSL.TransactionUnspentOutput where
+    toCSL (ref, txOut, network) = CSL.TransactionUnspentOutput <$> toCSL ref <*> toCSL (txOut, network)
+
+instance ToCSL ([(TxOutRef, DecoratedTxOut)], NetworkId) CSL.TransactionUnspentOutputs where
+    toCSL (xs, network) = Just $ mapMaybe (\(ref, txOut) -> toCSL (ref, txOut, network)) xs
+
+instance ToCSL (MapUTXO, NetworkId) CSL.TransactionUnspentOutputs where
+    toCSL (mapUtxo, network) = toCSL (Map.toList mapUtxo, network)
