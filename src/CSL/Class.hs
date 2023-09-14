@@ -10,13 +10,18 @@
 module CSL.Class where
 
 import           Cardano.Api.Shelley              (NetworkId)
+import           Control.Monad                    (join)
+import           Data.Either.Extra                (eitherToMaybe)
 import qualified Data.Map                         as Map
 import           Data.Maybe                       (Maybe)
 import           Data.Text                        (pack, unpack)
-import           Ledger                           (DecoratedTxOut (..), TxId (..), TxOutRef (..), noAdaValue,
-                                                   stakingCredential, toPubKeyHash, _decoratedTxOutAddress)
-import           Ledger.Ada                       (Ada (getLovelace), fromValue, lovelaceValueOf)
-import           Ledger.Value                     (CurrencySymbol (..), TokenName (..), Value (..))
+import           Ledger                           (DecoratedTxOut (..), _decoratedTxOutAddress, fromCardanoValue,
+                                                   stakingCredential, toCardanoValue, toPubKeyHash)
+import           Plutus.Script.Utils.Ada          (Ada (getLovelace), fromValue, lovelaceValueOf)
+import           Plutus.V2.Ledger.Api             (CurrencySymbol (CurrencySymbol, unCurrencySymbol),
+                                                   TokenName (TokenName, unTokenName), TxId (TxId), TxOutRef (TxOutRef),
+                                                   Value (Value, getValue))
+import qualified Plutus.V2.Ledger.Api             as P
 import           PlutusAppsExtra.Utils.Address    (addressToBech32, bech32ToAddress)
 import           PlutusAppsExtra.Utils.ChainIndex (MapUTXO)
 import           PlutusTx.AssocMap                hiding (mapMaybe)
@@ -38,7 +43,7 @@ instance FromCSL CSL.TransactionInput TxOutRef where
 instance FromCSL CSL.TransactionInputs [TxOutRef] where
     fromCSL = Just . mapMaybe fromCSL
 
-instance FromCSL CSL.Value Value where
+instance FromCSL CSL.Value P.Value where
     fromCSL (CSL.Value lovelace mma) = do
         valADA <- fmap lovelaceValueOf $ readMaybe $ unpack lovelace
         let valMA = case mma of
@@ -59,7 +64,7 @@ instance FromCSL CSL.Value Value where
 instance FromCSL CSL.TransactionOutput DecoratedTxOut where
     fromCSL (CSL.TransactionOutput addrCSL valCSL _ _) = do
         addr <- bech32ToAddress addrCSL
-        val  <- fromCSL valCSL
+        val  <- join $ eitherToMaybe . toCardanoValue <$> fromCSL valCSL
         let scr = stakingCredential addr
         case toPubKeyHash addr of
           Nothing  -> Nothing
@@ -90,12 +95,12 @@ instance ToCSL TxOutRef CSL.TransactionInput where
 instance ToCSL [TxOutRef] CSL.TransactionInputs where
     toCSL = Just . mapMaybe toCSL
 
-instance ToCSL Value CSL.Value where
+instance ToCSL P.Value CSL.Value where
     toCSL val = Just $ CSL.Value (pack $ show $ getLovelace lovelace) (CSL.MultiAsset <$> mma)
         where
             lovelace = fromValue val
-            assets   = noAdaValue val
-            mma = if assets == zero then Nothing else Just $ g' $ getValue assets
+            assets   = delete P.adaSymbol $ getValue val
+            mma = if assets == empty then Nothing else Just $ g' assets
             g' = Map.fromList . map f' . toList
             f' (k, m) = let kTxt = encodeHex $ fromBuiltin $ unCurrencySymbol k
                         in (kTxt, g m)
@@ -107,7 +112,7 @@ instance ToCSL Value CSL.Value where
 instance ToCSL (DecoratedTxOut, NetworkId) CSL.TransactionOutput where
     toCSL (txOut, networkId) = do
         addrCSL <- addressToBech32 networkId $ _decoratedTxOutAddress txOut
-        valCSL  <- toCSL $ _decoratedTxOutValue txOut
+        valCSL  <- toCSL $ fromCardanoValue $ _decoratedTxOutValue txOut
         return $ CSL.TransactionOutput addrCSL valCSL Nothing Nothing
 
 instance ToCSL ([DecoratedTxOut], NetworkId) CSL.TransactionOutputs where
