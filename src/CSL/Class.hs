@@ -13,11 +13,10 @@ import           Cardano.Api.Shelley              (NetworkId)
 import qualified Data.Map                         as Map
 import           Data.Maybe                       (Maybe)
 import           Data.Text                        (pack, unpack)
-import           Ledger                           (Address (Address), DecoratedTxOut (..), TxId (..), TxOutRef (..), noAdaValue,
-                                                   stakingCredential, toPubKeyHash)
+import           Ledger                           (DecoratedTxOut (..), TxId (..), TxOutRef (..), noAdaValue,
+                                                   stakingCredential, toPubKeyHash, _decoratedTxOutAddress)
 import           Ledger.Ada                       (Ada (getLovelace), fromValue, lovelaceValueOf)
 import           Ledger.Value                     (CurrencySymbol (..), TokenName (..), Value (..))
-import           Plutus.V1.Ledger.Api             (Credential (PubKeyCredential))
 import           PlutusAppsExtra.Utils.Address    (addressToBech32, bech32ToAddress)
 import           PlutusAppsExtra.Utils.ChainIndex (MapUTXO)
 import           PlutusTx.AssocMap                hiding (mapMaybe)
@@ -106,12 +105,10 @@ instance ToCSL Value CSL.Value where
                        in (aTxt, bTxt)
 
 instance ToCSL (DecoratedTxOut, NetworkId) CSL.TransactionOutput where
-    toCSL (PublicKeyDecoratedTxOut pkh scr val _ _, networkId) = do
-        let addr = Address (PubKeyCredential pkh) scr
-        addrCSL <- addressToBech32 networkId addr
-        valCSL  <- toCSL val
+    toCSL (txOut, networkId) = do
+        addrCSL <- addressToBech32 networkId $ _decoratedTxOutAddress txOut
+        valCSL  <- toCSL $ _decoratedTxOutValue txOut
         return $ CSL.TransactionOutput addrCSL valCSL Nothing Nothing
-    toCSL _ = Nothing
 
 instance ToCSL ([DecoratedTxOut], NetworkId) CSL.TransactionOutputs where
     toCSL (txOuts, network) = Just . mapMaybe toCSL $ zip txOuts $ repeat network
