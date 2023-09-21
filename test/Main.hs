@@ -9,14 +9,17 @@ module Main where
 import           CSL.Class                     (FromCSL (fromCSL), ToCSL (toCSL))
 import           Cardano.Api                   (NetworkId (Mainnet, Testnet), NetworkMagic (NetworkMagic), valueFromList,
                                                 valueToList)
+import qualified Cardano.Api                   as C
 import           Control.Monad.IO.Class        (MonadIO (..))
 import           Data.Bifunctor                (Bifunctor (..))
 import           Data.Maybe                    (isJust)
 import           Ledger                        (Address (Address), DecoratedTxOut (..), PubKeyHash, StakingCredential, TxOutRef,
                                                 Value)
-import           Ledger.Value                  (Value (..), adaSymbol)
+import           Ledger.Value.CardanoAPI       (fromCardanoValue, toCardanoValue)
 import           Plutus.PAB.Arbitrary          ()
 import           Plutus.V1.Ledger.Api          (Credential (..))
+import           Plutus.V2.Ledger.Api          (getValue)
+import qualified Plutus.V2.Ledger.Api          as P
 import           PlutusAppsExtra.Utils.Address (addressToBech32)
 import qualified PlutusTx.AssocMap             as PAM
 import           Test.Hspec                    (Expectation, Spec, describe, hspec, it, shouldBe)
@@ -42,7 +45,7 @@ propTxOutRefs :: [TxOutRef] -> Expectation
 propTxOutRefs refs = (toCSL refs >>= fromCSL) `shouldBe` Just refs
 
 propValue :: Value' -> Expectation
-propValue (Value' val) = (toCSL val >>= fromCSL) `shouldBe` Just val
+propValue (Value' val) = (toCSL (fromCardanoValue val) >>= fromCSL) `shouldBe` Just (fromCardanoValue val)
 
 propDecoratedTxOut :: () -> Expectation
 propDecoratedTxOut _ = do
@@ -65,15 +68,14 @@ propRefsWithDecoratedTxOuts refs = do
     let xs = zip refs txOuts
     (toCSL (xs, network) >>= fromCSL) `shouldBe` Just xs
 
-newtype Value' = Value' Value
+newtype Value' = Value' C.Value
     deriving newtype Show
 
 instance Arbitrary Value' where
     arbitrary = do
         val <- arbitrary
         if validValue val then pure $ Value' val else arbitrary
-        where validValue val = val == (Value . PAM.fromList . PAM.toList $ getValue val)
-
+        where validValue val = fromCardanoValue val == (P.Value . PAM.fromList . PAM.toList $ getValue $ fromCardanoValue val)
 
 newtype PublicKeyDecoratedTxOut' = PublicKeyDecoratedTxOut' {unPKDO' :: DecoratedTxOut}
     deriving newtype Show

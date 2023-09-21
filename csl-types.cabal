@@ -73,6 +73,7 @@ library
         plutus-apps-extra                    -any,
         plutus-ledger                        -any,
         plutus-ledger-api                    -any,
+        plutus-script-utils                  -any,
         plutus-tx                            -any        
     hs-source-dirs: src
     
