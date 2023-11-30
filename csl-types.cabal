@@ -44,7 +44,6 @@ library
       base64                                 -any,
       aeson                                  -any,
       bytestring                             -any,
-      cardano-api                            -any,
       containers                             -any,
       data-default                           -any,
       deepseq                                -any,
@@ -70,6 +69,7 @@ library
         plutus-tx-js                         -any,
     else
       build-depends:
+        cardano-api                          -any,
         plutus-apps-extra                    -any,
         plutus-ledger                        -any,
         plutus-ledger-api                    -any,
@@ -86,7 +86,6 @@ test-suite csl-types-test
     base                          >= 4.9 && < 5,
     aeson                                  -any,
     bytestring                             -any,
-    cardano-api                            -any,
     containers                             -any,
     csl-types                              -any,
     hspec                                  -any,
@@ -98,6 +97,7 @@ test-suite csl-types-test
       plutus-tx-js                         -any,
   else
     build-depends:
+      cardano-api                          -any,
       plutus-apps-extra                    -any,
       plutus-ledger                        -any,
       plutus-ledger-api                    -any,
