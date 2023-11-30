@@ -6,12 +6,13 @@
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE NoImplicitPrelude          #-}
+{-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeFamilies               #-}
 
 module CSL where
 
-import           Data.Aeson          (ToJSON, FromJSON)
+import           Data.Aeson          (FromJSON (..), ToJSON (..), object, withObject, (.:), (.=))
 import qualified Data.Map            as Map
 import           Data.Text           (Text)
 import           GHC.Generics        (Generic)
@@ -38,11 +39,18 @@ data Value = Value
     deriving stock (Eq, Ord, Show, Read, Generic)
     deriving (ToJSON, FromJSON)
 
+newtype Data = Data Text
+    deriving stock (Eq, Ord, Show, Read, Generic)
+instance ToJSON Data where
+    toJSON (Data text) = object [ "Data" .= text ]
+instance FromJSON Data where
+    parseJSON = withObject "Data" $ \o -> Data <$> o .: "Data"
+
 data TransactionOutput = TransactionOutput
     {
         address     :: Text,
         amount      :: Value,
-        plutus_data :: Maybe Text,
+        plutus_data :: Maybe Data,
         script_ref  :: Maybe Text
     }
     deriving stock (Eq, Ord, Show, Read, Generic)
