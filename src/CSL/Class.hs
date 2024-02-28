@@ -4,7 +4,9 @@
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE NoImplicitPrelude      #-}
+{-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TupleSections          #-}
 {-# LANGUAGE TypeFamilies           #-}
 
 module CSL.Class where
@@ -15,15 +17,14 @@ import           Data.Either.Extra                (eitherToMaybe)
 import qualified Data.Map                         as Map
 import           Data.Maybe                       (Maybe)
 import           Data.Text                        (pack, unpack)
-import           Ledger                           (DecoratedTxOut (..), _decoratedTxOutAddress, fromCardanoValue,
+import           Ledger                           (DecoratedTxOut (..), TxId (..), _decoratedTxOutAddress, fromCardanoValue,
                                                    stakingCredential, toCardanoValue, toPubKeyHash)
 import           Plutus.Script.Utils.Ada          (Ada (getLovelace), fromValue, lovelaceValueOf)
-import           Plutus.V2.Ledger.Api             (CurrencySymbol (CurrencySymbol, unCurrencySymbol),
-                                                   TokenName (TokenName, unTokenName), TxId (TxId), TxOutRef (TxOutRef),
-                                                   Value (Value, getValue))
+import           Plutus.V2.Ledger.Api             (CurrencySymbol (..), TokenName (..), TxOutRef (..), Value (..))
 import qualified Plutus.V2.Ledger.Api             as P
 import           PlutusAppsExtra.Utils.Address    (addressToBech32, bech32ToAddress)
 import           PlutusAppsExtra.Utils.ChainIndex (MapUTXO)
+import           PlutusAppsExtra.Utils.Kupo       (KupoResponse (..))
 import           PlutusTx.AssocMap                hiding (mapMaybe)
 import           PlutusTx.Prelude                 hiding (Maybe, toList)
 import           Prelude                          (repeat, show)
@@ -126,3 +127,13 @@ instance ToCSL ([(TxOutRef, DecoratedTxOut)], NetworkId) CSL.TransactionUnspentO
 
 instance ToCSL (MapUTXO, NetworkId) CSL.TransactionUnspentOutputs where
     toCSL (mapUtxo, network) = toCSL (Map.toList mapUtxo, network)
+
+instance ToCSL (KupoResponse, NetworkId) CSL.TransactionUnspentOutput where
+    toCSL (KupoResponse{..}, networkId) = do
+        let inputCSL = CSL.TransactionInput (encodeHex $ fromBuiltin $ getTxId krTxId) krOutputIndex
+        addrCSL <- addressToBech32 networkId krAddress
+        valCSL  <- toCSL (fromCardanoValue krValue)
+        pure $ CSL.TransactionUnspentOutput inputCSL (CSL.TransactionOutput addrCSL valCSL Nothing Nothing)
+
+instance ToCSL ([KupoResponse], NetworkId) CSL.TransactionUnspentOutputs where
+    toCSL (responses, networkId) = Just $ mapMaybe (toCSL . (, networkId)) responses
